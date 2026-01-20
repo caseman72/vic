@@ -233,7 +233,7 @@ function getPathHint(dir) {
 async function promptForRcsPath(localDir) {
   const hint = getPathHint(localDir);
   console.log("No RCS directory.");
-  console.log("  [l]ocal .rcs/");
+  console.log("  [L]ocal .rcs/");
   console.log(`  [h]int: ${hint}`);
   console.log("  [o]ther path");
   const answer = await prompt("[Lho] ");
