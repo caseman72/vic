@@ -212,9 +212,28 @@ function findXcsBundleRoot(filePath) {
   return null;
 }
 
+// Generate a hint for remote RCS path based on current directory
+function getPathHint(dir) {
+  let hint = dir;
+
+  // Remove HOME_DIR prefix
+  if (hint.startsWith(HOME_DIR)) {
+    hint = hint.slice(HOME_DIR.length);
+  }
+  // Remove /Volumes/xxx/ prefix
+  else if (hint.startsWith("/Volumes/")) {
+    hint = hint.replace(/^\/Volumes\/[^/]+/, "");
+  }
+
+  // Clean leading/trailing slashes
+  return hint.replace(/^\/+/, "").replace(/\/+$/, "");
+}
+
 // Prompt user for RCS path (like RCS ci style)
 async function promptForRcsPath(localDir) {
-  const answer = await prompt("No RCS directory. Enter remote path or <enter> ");
+  const hint = getPathHint(localDir);
+  console.log("No RCS directory. Enter remote path or <enter>");
+  const answer = await prompt(`  hint: ${hint}\n> `);
   const trimmed = answer.trim();
 
   if (trimmed === "" || trimmed === ".") {
