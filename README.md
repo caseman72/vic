@@ -98,11 +98,13 @@ If `claude` CLI is not installed, vic falls back to a default `-` message (same 
 When editing a file in a directory without an existing `.rcs/` folder, vic prompts:
 
 ```
-No RCS directory. Enter remote path or <enter>
+No RCS directory. [L]ocal, [h]int: Projects/myapp, [o]ther
+[L/h/o]:
 ```
 
-- **Press Enter** - Creates local `.rcs/` directory (default behavior)
-- **Enter a path** (e.g., `projects/myapp`) - Stores RCS files in `~/.xcs/projects/myapp/`
+- **L** (default) - Creates local `.rcs/` directory
+- **h** - Uses the suggested path under `~/.xcs/` (based on current directory)
+- **o** - Prompts for a custom path
 
 The choice is remembered via extended attributes (xattr) on the directory, so subsequent edits auto-detect the configured path.
 
