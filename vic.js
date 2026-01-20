@@ -232,18 +232,35 @@ function getPathHint(dir) {
 // Prompt user for RCS path (like RCS ci style)
 async function promptForRcsPath(localDir) {
   const hint = getPathHint(localDir);
-  console.log("No RCS directory. Enter remote path or <enter>");
-  const answer = await prompt(`  hint: ${hint}\n> `);
-  const trimmed = answer.trim();
+  console.log("No RCS directory.");
+  console.log("  [l]ocal .rcs/");
+  console.log(`  [h]int: ${hint}`);
+  console.log("  [o]ther path");
+  const answer = await prompt("[Lho] ");
+  const choice = answer.trim().toLowerCase();
 
-  if (trimmed === "" || trimmed === ".") {
+  if (choice === "" || choice === "l") {
     // Local .rcs/ directory (default)
     return { relative: ".", full: `${localDir}/${RCS_DIR}` };
   }
 
-  // Remote path under ~/.xcs/
-  const relativePath = trimmed.replace(/^\/+/, "").replace(/\/+$/, ""); // Clean slashes
-  return { relative: relativePath, full: `${XCS_ROOT}/${relativePath}` };
+  if (choice === "h") {
+    // Use the hint path
+    return { relative: hint, full: `${XCS_ROOT}/${hint}` };
+  }
+
+  if (choice === "o") {
+    // Prompt for custom path
+    const customPath = await prompt("Enter path: ");
+    const relativePath = customPath.trim().replace(/^\/+/, "").replace(/\/+$/, "");
+    if (!relativePath) {
+      return { relative: ".", full: `${localDir}/${RCS_DIR}` };
+    }
+    return { relative: relativePath, full: `${XCS_ROOT}/${relativePath}` };
+  }
+
+  // Default to local
+  return { relative: ".", full: `${localDir}/${RCS_DIR}` };
 }
 
 // Resolve RCS store path - works for any directory without existing .rcs
