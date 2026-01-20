@@ -42,6 +42,12 @@ This installs the syntax checkers:
 
 # Show commit history for multiple files
 ./vic.js -n 5 -log *.js
+
+# Diff revision vs current
+./vic.js -diff 1.1 <file>
+
+# Diff two revisions
+./vic.js -diff 1.1 1.5 <file>
 ```
 
 ## What it does
