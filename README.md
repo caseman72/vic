@@ -33,6 +33,9 @@ This installs the syntax checkers:
 
 # Multiple files
 ./vic.js file1.js file2.js
+
+# Show commit history
+./vic.js -log <file>
 ```
 
 ## What it does
@@ -76,6 +79,7 @@ If `claude` CLI is not installed, vic falls back to a default `-` message (same 
 | `.js`, `.ts`, `.jsx`, `.tsx`, `.mjs`, `.mts` | ESLint |
 | `.html`, `.htm` | ESLint with HTML plugin |
 | `.css` | ESLint with CSS plugin |
+| `.json`, `.jsonc`, `.json5` | ESLint with JSON plugin |
 
 ## Remote RCS Storage
 
