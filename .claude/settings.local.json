@@ -2,7 +2,8 @@
   "permissions": {
     "allow": [
       "Bash(npx eslint:*)",
-      "WebFetch(domain:html-eslint.org)"
+      "WebFetch(domain:html-eslint.org)",
+      "Bash(git branch:*)"
     ]
   }
 }

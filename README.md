@@ -73,23 +73,35 @@ If `claude` CLI is not installed, vic falls back to a default `-` message (same 
 
 | Extension | Checker |
 |-----------|---------|
-| `.js`, `.ts`, `.jsx`, `.tsx`, `.mjs`, `.mts` | oxlint, biome, or eslint |
-| `.html`, `.htm` | htmlhint |
-| `.css`, `.scss`, `.less` | stylelint |
-| `.json` | Built-in JSON.parse validation |
-| `.php` | php -l |
-| `.py` | python -m py_compile |
-| `.rb` | ruby -c |
-| `.pl` | perl -c |
+| `.js`, `.ts`, `.jsx`, `.tsx`, `.mjs`, `.mts` | ESLint |
+| `.html`, `.htm` | ESLint with HTML plugin |
+| `.css` | ESLint with CSS plugin |
+
+## Remote RCS Storage
+
+When editing a file in a directory without an existing `.rcs/` folder, vic prompts:
+
+```
+No RCS directory. Enter remote path or <enter>
+```
+
+- **Press Enter** - Creates local `.rcs/` directory (default behavior)
+- **Enter a path** (e.g., `projects/myapp`) - Stores RCS files in `~/.xcs/projects/myapp/`
+
+The choice is remembered via extended attributes (xattr) on the directory, so subsequent edits auto-detect the configured path.
+
+### XCS Bundle Support
+
+For `.xcs` bundle directories, the xattr is stored on the bundle root, allowing all files within the bundle to share the same RCS configuration.
 
 ## Requirements
 
-- Node.js 18+
-- RCS tools installed (`/opt/homebrew/bin/co`, `ci`, `rcs`, `rcsdiff`, `rlog`)
+- Bun or Node.js 18+
+- RCS tools installed (`brew install rcs`)
 - (Optional) `claude` CLI for AI-generated commit messages
 
 ## History
 
 - Original Perl version by Dave Regan (regan@ao.com) - May 2000
 - Modified by Casey Manion (casey@manion.com) - Nov 2005
-- JavaScript port - 2025
+- JavaScript port - Jan 2026
