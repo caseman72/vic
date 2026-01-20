@@ -232,11 +232,8 @@ function getPathHint(dir) {
 // Prompt user for RCS path (like RCS ci style)
 async function promptForRcsPath(localDir) {
   const hint = getPathHint(localDir);
-  console.log("No RCS directory.");
-  console.log("  [L]ocal .rcs/");
-  console.log(`  [h]int: ${hint}`);
-  console.log("  [o]ther path");
-  const answer = await prompt("[Lho] ");
+  console.log(`No RCS directory. [L]ocal, [h]int: ${hint}, [o]ther`);
+  const answer = await prompt("[L/h/o]: ");
   const choice = answer.trim().toLowerCase();
 
   if (choice === "" || choice === "l") {
