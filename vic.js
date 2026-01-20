@@ -711,15 +711,6 @@ async function main() {
     process.exit(0);
   }
 
-  // Handle -log flag to show commit history (takes precedence over other flags)
-  if (args.includes("-log")) {
-    const files = args.filter(a => a !== "-log" && a !== "-pc" && a !== "-n");
-    for (const fname of files) {
-      await showCommits(fname);
-    }
-    return;
-  }
-
   // Handle -pc flag for syntax checking (ESLint for JS/TS)
   if (args[0] === "-pc") {
     args.shift();
@@ -731,6 +722,15 @@ async function main() {
   if (args[0] === "-n") {
     args.shift();
     maxFiles = parseInt(args.shift(), 10) || 3;
+  }
+
+  // Handle -log flag to show commit history (ignores -pc)
+  if (args[0] === "-log") {
+    args.shift();
+    for (const fname of args) {
+      await showCommits(fname);
+    }
+    return;
   }
 
   // Limit file count
