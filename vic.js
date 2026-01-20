@@ -590,12 +590,110 @@ async function checkinFile(fileInfo) {
   await runSyntaxCheck(fname);
 }
 
+// Show commit history for a file
+async function showCommits(fname) {
+  const dirName = dirname(resolve(fname));
+  const baseName = basename(fname);
+  const localRcsPath = `${dirName}/${RCS_DIR}`;
+
+  // Determine RCS file location
+  let rcsFile;
+  if (existsSync(localRcsPath)) {
+    rcsFile = `${localRcsPath}/${baseName},v`;
+  }
+  else {
+    // Check xattr for remote path
+    const xcsRoot = findXcsBundleRoot(resolve(fname));
+    const xattrDir = xcsRoot || dirName;
+    const xattrValue = getXattrPath(xattrDir);
+
+    if (xattrValue && xattrValue !== ".") {
+      rcsFile = `${XCS_ROOT}/${xattrValue}/${baseName},v`;
+    }
+    else if (xattrValue === ".") {
+      const localDir = xcsRoot || dirName;
+      rcsFile = `${localDir}/${RCS_DIR}/${baseName},v`;
+    }
+    else {
+      console.log(`No RCS history found for ${fname}`);
+      return;
+    }
+  }
+
+  if (!existsSync(rcsFile)) {
+    console.log(`No RCS history found for ${fname}`);
+    return;
+  }
+
+  // Get rlog output and parse it
+  try {
+    const result = execSync(`${RLOG} "${rcsFile}" 2>/dev/null`, { encoding: "utf8" });
+    const lines = result.split("\n");
+
+    let inRevision = false;
+    let currentRev = "";
+    let currentDate = "";
+    let currentMsg = [];
+    const entries = [];
+
+    for (const line of lines) {
+      if (line.startsWith("revision ")) {
+        // Store previous revision if exists
+        if (currentRev && currentMsg.length) {
+          const msg = currentMsg.join(" ").trim();
+          entries.push({ rev: currentRev, date: currentDate, msg });
+        }
+        currentRev = line.replace("revision ", "").trim();
+        currentMsg = [];
+        inRevision = true;
+      }
+      else if (inRevision && line.startsWith("date: ")) {
+        // Parse date line: "date: 2026/01/20 10:30:00;  author: user;  state: Exp;  lines: +1 -0"
+        const dateMatch = line.match(/date: ([^;]+);/);
+        if (dateMatch) {
+          currentDate = dateMatch[1].trim();
+        }
+      }
+      else if (inRevision && line.startsWith("----------------------------")) {
+        // End of this revision's message, next revision coming
+        if (currentRev && currentMsg.length) {
+          const msg = currentMsg.join(" ").trim();
+          entries.push({ rev: currentRev, date: currentDate, msg });
+        }
+        currentRev = "";
+        currentMsg = [];
+        inRevision = false;
+      }
+      else if (inRevision && line.startsWith("===")) {
+        // End of log
+        if (currentRev && currentMsg.length) {
+          const msg = currentMsg.join(" ").trim();
+          entries.push({ rev: currentRev, date: currentDate, msg });
+        }
+      }
+      else if (inRevision && line && !line.startsWith("date:") && !line.startsWith("branches:")) {
+        currentMsg.push(line);
+      }
+    }
+
+    // Output in reverse order (oldest first)
+    console.log(`\n${underlineMessage(fname)}\n`);
+    for (const entry of entries.reverse()) {
+      console.log(`  ${entry.rev}  ${entry.date}  ${entry.msg}`);
+    }
+    console.log("");
+  }
+  catch (e) {
+    console.log(`Error reading RCS history: ${e.message}`);
+  }
+}
+
 // Main
 async function main() {
   const args = process.argv.slice(2);
 
   if (args.length === 0) {
-    console.error("Usage: vic [-pc] [-n NUM] file1 ...");
+    console.error("Usage: vic [-pc] [-n NUM] [-log] file1 ...");
     process.exit(1);
   }
 
@@ -607,6 +705,15 @@ async function main() {
   if (args.includes("--version")) {
     console.log(VERSION);
     process.exit(0);
+  }
+
+  // Handle -log flag to show commit history (takes precedence over other flags)
+  if (args.includes("-log")) {
+    const files = args.filter(a => a !== "-log" && a !== "-pc" && a !== "-n");
+    for (const fname of files) {
+      await showCommits(fname);
+    }
+    return;
   }
 
   // Handle -pc flag for syntax checking (ESLint for JS/TS)
