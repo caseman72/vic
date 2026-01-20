@@ -692,12 +692,62 @@ async function showCommits(fname) {
   }
 }
 
+// Show diff between revisions
+async function showDiff(fname, rev1, rev2 = null) {
+  const dirName = dirname(resolve(fname));
+  const baseName = basename(fname);
+  const localRcsPath = `${dirName}/${RCS_DIR}`;
+
+  // Determine RCS file location
+  let rcsFile;
+  if (existsSync(localRcsPath)) {
+    rcsFile = `${localRcsPath}/${baseName},v`;
+  }
+  else {
+    // Check xattr for remote path
+    const xcsRoot = findXcsBundleRoot(resolve(fname));
+    const xattrDir = xcsRoot || dirName;
+    const xattrValue = getXattrPath(xattrDir);
+
+    if (xattrValue && xattrValue !== ".") {
+      rcsFile = `${XCS_ROOT}/${xattrValue}/${baseName},v`;
+    }
+    else if (xattrValue === ".") {
+      const localDir = xcsRoot || dirName;
+      rcsFile = `${localDir}/${RCS_DIR}/${baseName},v`;
+    }
+    else {
+      console.log(`No RCS history found for ${fname}`);
+      return;
+    }
+  }
+
+  if (!existsSync(rcsFile)) {
+    console.log(`No RCS history found for ${fname}`);
+    return;
+  }
+
+  // Build rcsdiff command
+  let diffCmd;
+  if (rev2) {
+    // Compare two revisions
+    diffCmd = `${RCS_DIFF} -r${rev1} -r${rev2} "${fname}" "${rcsFile}"`;
+  }
+  else {
+    // Compare revision to current working file
+    diffCmd = `${RCS_DIFF} -r${rev1} "${fname}" "${rcsFile}"`;
+  }
+
+  console.log(`\n${underlineMessage(fname)} (${rev1} vs ${rev2 || "current"})\n`);
+  shell(diffCmd);
+}
+
 // Main
 async function main() {
   const args = process.argv.slice(2);
 
   if (args.length === 0) {
-    console.error("Usage: vic [-pc] [-n NUM] [-log] file1 ...");
+    console.error("Usage: vic [-pc] [-n NUM] [-log] [-diff REV [REV]] file1 ...");
     process.exit(1);
   }
 
@@ -735,6 +785,34 @@ async function main() {
     for (const fname of args) {
       await showCommits(fname);
     }
+    return;
+  }
+
+  // Handle -diff flag to show diff between revisions (ignores -pc, only 1 file)
+  if (args[0] === "-diff") {
+    args.shift();
+    // Parse revision(s) - format: -diff REV [REV] file
+    const revPattern = /^\d+\.\d+$/;
+    const rev1 = args[0];
+    if (!rev1 || !revPattern.test(rev1)) {
+      console.error("Usage: vic -diff REV [REV] file");
+      console.error("  vic -diff 1.1 file.js        # diff 1.1 vs current");
+      console.error("  vic -diff 1.1 1.3 file.js    # diff 1.1 vs 1.3");
+      process.exit(1);
+    }
+    args.shift();
+
+    let rev2 = null;
+    if (args[0] && revPattern.test(args[0])) {
+      rev2 = args.shift();
+    }
+
+    if (args.length !== 1) {
+      console.error("Error: -diff requires exactly 1 file");
+      process.exit(1);
+    }
+
+    await showDiff(args[0], rev1, rev2);
     return;
   }
 
