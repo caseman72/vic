@@ -31,11 +31,17 @@ This installs the syntax checkers:
 # Enable syntax checking after edit
 ./vic.js -pc <file>
 
-# Multiple files
+# Multiple files (default max 3)
 ./vic.js file1.js file2.js
+
+# Increase max file limit
+./vic.js -n 5 file1.js file2.js file3.js file4.js file5.js
 
 # Show commit history
 ./vic.js -log <file>
+
+# Show commit history for multiple files
+./vic.js -n 5 -log *.js
 ```
 
 ## What it does
