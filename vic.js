@@ -727,6 +727,11 @@ async function main() {
   // Handle -log flag to show commit history (ignores -pc)
   if (args[0] === "-log") {
     args.shift();
+    if (args.length > maxFiles) {
+      console.error(`Too many files (${args.length}). Maximum is ${maxFiles}.`);
+      console.error("Use -n NUM to increase the limit, e.g.: vic -n 5 -log file1 file2 ...");
+      process.exit(1);
+    }
     for (const fname of args) {
       await showCommits(fname);
     }
