@@ -329,15 +329,19 @@ async function runSyntaxCheck(fname) {
   // and rules - seperate files to easily fine tune them
   if (["js", "ts", "jsx", "tsx", "mjs", "mts"].includes(ext)) {
     const jsOptions = await import("./lib/eslint-js");
-    eslintOptions.overrideConfig.push(jsOptions.default);
+    eslintOptions.overrideConfig.push(...jsOptions.default);
   }
   else if (["htm", "html"].includes(ext)) {
     const htmOptions = await import("./lib/eslint-htm");
-    eslintOptions.overrideConfig.push(htmOptions.default);
+    eslintOptions.overrideConfig.push(...htmOptions.default);
   }
   else if (["css"].includes(ext)) {
     const cssOptions = await import("./lib/eslint-css");
-    eslintOptions.overrideConfig.push(cssOptions.default);
+    eslintOptions.overrideConfig.push(...cssOptions.default);
+  }
+  else if (["json", "jsonc", "json5" ].includes(ext)) {
+    const jsonOptions = await import("./lib/eslint-json");
+    eslintOptions.overrideConfig.push(...jsonOptions.default);
   }
   else {
     console.log("");

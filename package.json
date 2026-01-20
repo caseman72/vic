@@ -13,6 +13,7 @@
   },
   "devDependencies": {
     "@eslint/css": "^0.14.1",
+    "@eslint/json": "^0.14.0",
     "@html-eslint/eslint-plugin": "^0.53.0",
     "eslint": "^9.0.0",
     "htmlhint": "^1.1.0",
