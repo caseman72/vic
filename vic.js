@@ -372,9 +372,13 @@ async function runSyntaxCheck(fname) {
     const cssOptions = await import("./lib/eslint-css");
     eslintOptions.overrideConfig.push(...cssOptions.default);
   }
-  else if (["json", "jsonc", "json5" ].includes(ext)) {
+  else if (["json", "jsonc", "json5"].includes(ext)) {
     const jsonOptions = await import("./lib/eslint-json");
     eslintOptions.overrideConfig.push(...jsonOptions.default);
+  }
+  else if (["md"].includes(ext)) {
+    const mdOptions = await import("./lib/eslint-md");
+    eslintOptions.overrideConfig.push(...mdOptions.default);
   }
   else {
     console.log("");

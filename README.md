@@ -92,6 +92,7 @@ If `claude` CLI is not installed, vic falls back to a default `-` message (same 
 | `.html`, `.htm` | ESLint with HTML plugin |
 | `.css` | ESLint with CSS plugin |
 | `.json`, `.jsonc`, `.json5` | ESLint with JSON plugin |
+| `.md` | ESLint with Markdown plugin |
 
 ## Remote RCS Storage
 
