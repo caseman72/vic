@@ -906,4 +906,32 @@ async function main() {
   closeReadline();
 }
 
-main().catch(console.error);
+// Only run main when executed directly (not when imported for testing)
+const isMainModule = process.argv[1] && (
+  process.argv[1].endsWith("vic.js") ||
+  process.argv[1].endsWith("vic") ||
+  process.argv[1].endsWith("vi")
+);
+
+if (isMainModule) {
+  main().catch(console.error);
+}
+
+// Export for testing
+export {
+  which,
+  shell,
+  underlineMessage,
+  getPathHint,
+  getXattrPath,
+  setXattrPath,
+  removeXattr,
+  findXcsBundleRoot,
+  getLockersName,
+  generateCommitMessage,
+  VERSION,
+  RCS_DIR,
+  XCS_ROOT,
+  HOME_DIR,
+  IS_MACOS
+};

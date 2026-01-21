@@ -5,3 +5,4 @@ node_modules/
 .devices.json
 .DS_Store
 .rcs
+test/.tmp/

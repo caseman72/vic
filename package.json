@@ -8,6 +8,11 @@
     "vic": "./vic.js"
   },
   "scripts": {
+    "test": "node --test test/*.test.js",
+    "test:cov": "node --test --experimental-test-coverage test/*.test.js",
+    "test:unit": "node --test test/unit.test.js",
+    "test:cli": "node --test test/cli.test.js",
+    "test:rcs": "node --test test/rcs.test.js",
     "lint": "eslint .",
     "lint:fix": "eslint . --fix"
   },

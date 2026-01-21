@@ -113,6 +113,21 @@ The choice is remembered via extended attributes (xattr) on the directory, so su
 
 For `.xcs` bundle directories, the xattr is stored on the bundle root, allowing all files within the bundle to share the same RCS configuration.
 
+## Testing
+
+```bash
+# Run all tests
+npm test
+
+# Run with coverage
+npm run test:cov
+
+# Run specific test suites
+npm run test:unit   # Unit tests for utility functions
+npm run test:cli    # CLI argument parsing tests
+npm run test:rcs    # RCS integration tests
+```
+
 ## Requirements
 
 - Bun or Node.js 18+
