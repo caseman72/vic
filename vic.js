@@ -122,9 +122,9 @@ function generateCommitMessage(diff) {
     const fullPrompt = CLAUDE_PROMPT + diff;
 
     // Use Claude CLI with --print flag to get output directly
-    const result = spawnSync(CLAUDE_CLI, ["--print", "--max-turns", "1", fullPrompt], {
+    const result = spawnSync(CLAUDE_CLI, ["--print", "--max-turns", "1", "--model", "sonnet", fullPrompt], {
       encoding: "utf8",
-      timeout: 30000, // 30 second timeout
+      timeout: 10000, // 10 second timeout
       maxBuffer: 1024 * 1024
     });
 
@@ -360,8 +360,12 @@ async function runSyntaxCheck(fname) {
   const ext = fname.split(".").pop().toLowerCase();
 
   // and rules - seperate files to easily fine tune them
-  if (["js", "ts", "jsx", "tsx", "mjs", "mts"].includes(ext)) {
+  if (["js", "jsx", "mjs", "cjs"].includes(ext)) {
     const jsOptions = await import("./lib/eslint-js");
+    eslintOptions.overrideConfig.push(...jsOptions.default);
+  }
+  else if (["ts", "tsx", "mts", "cts"].includes(ext)) {
+    const jsOptions = await import("./lib/eslint-ts");
     eslintOptions.overrideConfig.push(...jsOptions.default);
   }
   else if (["htm", "html"].includes(ext)) {
