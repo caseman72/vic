@@ -212,6 +212,32 @@ function findXcsBundleRoot(filePath) {
   return null;
 }
 
+// Resolve the RCS ,v file path for a given file
+// Returns the path to the ,v file, or null if no RCS config exists
+function findRcsFile(fname) {
+  const dirName = dirname(resolve(fname));
+  const baseName = basename(fname);
+  const localRcsPath = `${dirName}/${RCS_DIR}`;
+
+  if (existsSync(localRcsPath)) {
+    return `${localRcsPath}/${baseName},v`;
+  }
+
+  // Check xattr for remote path
+  const xcsRoot = findXcsBundleRoot(resolve(fname));
+  const xattrDir = xcsRoot || dirName;
+  const xattrValue = getXattrPath(xattrDir);
+
+  if (xattrValue && xattrValue !== ".") {
+    return `${XCS_ROOT}/${xattrValue}/${baseName},v`;
+  }
+  if (xattrValue === ".") {
+    const localDir = xcsRoot || dirName;
+    return `${localDir}/${RCS_DIR}/${baseName},v`;
+  }
+  return null;
+}
+
 // Generate a hint for remote RCS path based on current directory
 function getPathHint(dir) {
   let hint = dir;
@@ -430,10 +456,17 @@ async function checkoutFile(fname) {
       const lstats = lstatSync(fname);
       if (lstats.isSymbolicLink()) {
         const realPath = realpathSync(fname); // Resolves to absolute path
-        console.log(`${fname} is a symbolic link to ${realPath}`);
-        const ans = await prompt("Edit the linked file? [Y/n] ");
-        if (/n/i.test(ans)) return null;
-        fname = realPath;
+        const realRcsFile = findRcsFile(realPath);
+        if (realRcsFile && existsSync(realRcsFile)) {
+          // RCS file exists for the target - skip prompt, just follow the link
+          fname = realPath;
+        }
+        else {
+          console.log(`${fname} is a symbolic link to ${realPath}`);
+          const ans = await prompt("Edit the linked file? [Y/n] ");
+          if (/n/i.test(ans)) return null;
+          fname = realPath;
+        }
         // Update dirname/basename for the resolved path
         dirName = dirname(fname);
         baseName = basename(fname);
@@ -637,35 +670,8 @@ async function checkinFile(fileInfo) {
 
 // Show commit history for a file
 async function showCommits(fname) {
-  const dirName = dirname(resolve(fname));
-  const baseName = basename(fname);
-  const localRcsPath = `${dirName}/${RCS_DIR}`;
-
-  // Determine RCS file location
-  let rcsFile;
-  if (existsSync(localRcsPath)) {
-    rcsFile = `${localRcsPath}/${baseName},v`;
-  }
-  else {
-    // Check xattr for remote path
-    const xcsRoot = findXcsBundleRoot(resolve(fname));
-    const xattrDir = xcsRoot || dirName;
-    const xattrValue = getXattrPath(xattrDir);
-
-    if (xattrValue && xattrValue !== ".") {
-      rcsFile = `${XCS_ROOT}/${xattrValue}/${baseName},v`;
-    }
-    else if (xattrValue === ".") {
-      const localDir = xcsRoot || dirName;
-      rcsFile = `${localDir}/${RCS_DIR}/${baseName},v`;
-    }
-    else {
-      console.log(`No RCS history found for ${fname}`);
-      return;
-    }
-  }
-
-  if (!existsSync(rcsFile)) {
+  const rcsFile = findRcsFile(fname);
+  if (!rcsFile || !existsSync(rcsFile)) {
     console.log(`No RCS history found for ${fname}`);
     return;
   }
@@ -735,35 +741,8 @@ async function showCommits(fname) {
 
 // Show diff between revisions
 async function showDiff(fname, rev1, rev2 = null) {
-  const dirName = dirname(resolve(fname));
-  const baseName = basename(fname);
-  const localRcsPath = `${dirName}/${RCS_DIR}`;
-
-  // Determine RCS file location
-  let rcsFile;
-  if (existsSync(localRcsPath)) {
-    rcsFile = `${localRcsPath}/${baseName},v`;
-  }
-  else {
-    // Check xattr for remote path
-    const xcsRoot = findXcsBundleRoot(resolve(fname));
-    const xattrDir = xcsRoot || dirName;
-    const xattrValue = getXattrPath(xattrDir);
-
-    if (xattrValue && xattrValue !== ".") {
-      rcsFile = `${XCS_ROOT}/${xattrValue}/${baseName},v`;
-    }
-    else if (xattrValue === ".") {
-      const localDir = xcsRoot || dirName;
-      rcsFile = `${localDir}/${RCS_DIR}/${baseName},v`;
-    }
-    else {
-      console.log(`No RCS history found for ${fname}`);
-      return;
-    }
-  }
-
-  if (!existsSync(rcsFile)) {
+  const rcsFile = findRcsFile(fname);
+  if (!rcsFile || !existsSync(rcsFile)) {
     console.log(`No RCS history found for ${fname}`);
     return;
   }
