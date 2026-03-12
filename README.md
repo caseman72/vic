@@ -18,7 +18,8 @@ npm install
 ```
 
 This installs the syntax checkers:
-- **eslint** - JavaScript/TypeScript linting
+- **eslint** - JavaScript linting
+- **typescript-eslint** - TypeScript linting
 - **htmlhint** - HTML validation
 - **stylelint** - CSS/SCSS/Less linting
 
@@ -88,7 +89,8 @@ If `claude` CLI is not installed, vic falls back to a default `-` message (same 
 
 | Extension | Checker |
 |-----------|---------|
-| `.js`, `.ts`, `.jsx`, `.tsx`, `.mjs`, `.mts` | ESLint |
+| `.js`, `.jsx`, `.mjs` | ESLint |
+| `.ts`, `.tsx`, `.mts` | ESLint with typescript-eslint |
 | `.html`, `.htm` | ESLint with HTML plugin |
 | `.css` | ESLint with CSS plugin |
 | `.json`, `.jsonc`, `.json5` | ESLint with JSON plugin |
