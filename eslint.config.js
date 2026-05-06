@@ -1,6 +1,6 @@
 export default [
   {
-    files: ["**/*.js"],
+    files: ["js", "jsx", "mjs", "cjs"],
     rules: {
       "quotes": ["error", "double"],
       "no-tabs": "error",
