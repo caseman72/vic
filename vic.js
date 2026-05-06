@@ -36,34 +36,15 @@ const RCS_DIFF = `${RCS_ROOT}/rcsdiff -u -zLT`;
 const RLOG = `${RCS_ROOT}/rlog -zLT`;
 const EDITOR = process.env.VISUAL || process.env.EDITOR || "vi";
 const HOME_DIR = process.env.HOME;
-const VERSION = "1.1.1";
+const VERSION = "1.1.2";
 
 // XCS bundle configuration
 const XCS_ROOT = `${HOME_DIR}/.xcs`;  // Base for remote .xcs RCS stores
 const XATTR_KEY = "com.manion.rcs.path";
 const IS_MACOS = process.platform === "darwin";
 
-// =============================================================================
-// CLAUDE AI COMMIT MESSAGE PROMPT
-// Modify this prompt to customize how Claude summarizes your changes
-// =============================================================================
-const CLAUDE_PROMPT = `You are a commit message generator. Analyze the following unified diff and write a concise, descriptive RCS commit message.
-
-Rules:
-- Write a single line summary (max 72 chars) describing WHAT changed
-- Focus on the functional change, not the mechanics (avoid "changed line X")
-- Use imperative mood ("Add feature" not "Added feature")
-- Be specific but concise
-- If multiple changes, summarize the main theme
-- Output ONLY the commit message, nothing else
-
-Diff:
-`;
-
 // Syntax check flag
 let enableSyntaxCheck = false;
-
-const CLAUDE_CLI = which("claude");
 
 // Shared readline interface for user input
 let rl = null;
@@ -109,37 +90,6 @@ function shell(cmd, options = {}) {
   catch (e) {
     return { code: 1, stdout: "", stderr: e.message };
   }
-}
-
-// Generate commit message using Claude AI
-function generateCommitMessage(diff) {
-  if (!CLAUDE_CLI || !diff || diff.trim() === "") {
-    return "-"; // Default message if no Claude or no diff
-  }
-
-  try {
-    // console.log("\n--- Generating commit message with Claude ---");
-    const fullPrompt = CLAUDE_PROMPT + diff;
-
-    // Use Claude CLI with --print flag to get output directly
-    const result = spawnSync(CLAUDE_CLI, ["--print", "--max-turns", "1", "--model", "sonnet", fullPrompt], {
-      encoding: "utf8",
-      timeout: 10000, // 10 second timeout
-      maxBuffer: 1024 * 1024
-    });
-
-    if (result.status === 0 && result.stdout) {
-      const message = result.stdout.trim();
-      // Sanitize: remove quotes that might break RCS command
-      const sanitized = message.replace(/"/g, "'").replace(/\n/g, " ").substring(0, 200);
-      return sanitized || "-";
-    }
-  }
-  catch (e) {
-    console.log(`Claude error: ${e.message}`);
-  }
-
-  return "-";
 }
 
 // format console underline
@@ -573,9 +523,11 @@ async function checkoutFile(fname) {
       console.log("");
       shell(`${RCS_LOCK} "${fname}" "${rcsFile}"`);
       shell(`${RCS_CHECKIN_BASE} -m"Sync uncommitted changes" "${fname}" "${rcsFile}"`);
-      // Re-capture permissions after ci (ci -u changes them)
-      const newStats = statSync(fname);
-      originalMode = newStats.mode;
+      // NOTE: ci -u flips the working file to read-only as a side effect.
+      // Do NOT re-capture originalMode here — it was captured above as the
+      // user's intended mode (e.g. 0o664). Re-capturing would lock in the
+      // 0o444 that ci just imposed, and checkinFile() would restore that
+      // read-only mode at the end instead of the user's original.
       console.log("");
     }
     else if (!/3/.test(ans)) {
@@ -625,32 +577,8 @@ async function checkoutFile(fname) {
 async function checkinFile(fileInfo) {
   const { fname, rcsFile, originalMode, rcsBasePath } = fileInfo;
 
-  // Get diff for commit message generation
-  const diffTmpFile = `/tmp/${process.pid}.${basename(fname)}.diff`;
-  shell(`${RCS_DIFF} "${fname}" "${rcsFile}" >${diffTmpFile} 2>/dev/null`, { silent: true });
-
-  let commitMessage = "-";
-  try {
-    const diffContent = execSync(`cat "${diffTmpFile}"`, { encoding: "utf8" });
-    if (diffContent.trim()) {
-      commitMessage = generateCommitMessage(diffContent);
-    }
-    else {
-      // console.log(".410."); // NO DIFF
-    }
-    unlinkSync(diffTmpFile);
-  }
-  catch {
-    // No diff or error reading - use default message
-  }
-
-  if (commitMessage !== "-") {
-    // log like the ESLint with underline
-    console.log(`${underlineMessage("Commit message:")}\n${commitMessage}\n`);
-  }
-
-  // Check back in with generated commit message
-  shell(`${RCS_CHECKIN_BASE} -m"${commitMessage}" "${fname}" "${rcsFile}"`);
+  // Check back in with no commit message
+  shell(`${RCS_CHECKIN_BASE} -m"-" "${fname}" "${rcsFile}"`);
 
   let lname = getLockersName(fname, rcsBasePath);
   if (lname) {
@@ -911,7 +839,6 @@ export {
   removeXattr,
   findXcsBundleRoot,
   getLockersName,
-  generateCommitMessage,
   VERSION,
   RCS_DIR,
   XCS_ROOT,
