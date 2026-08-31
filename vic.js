@@ -11,7 +11,7 @@
  */
 
 import { spawn, execSync, spawnSync } from "child_process";
-import { existsSync, mkdirSync, statSync, lstatSync, writeFileSync, unlinkSync, realpathSync, chmodSync } from "fs";
+import { existsSync, mkdirSync, statSync, lstatSync, writeFileSync, readFileSync, unlinkSync, realpathSync, chmodSync } from "fs";
 import { dirname, basename, resolve } from "path";
 import { createInterface } from "readline";
 
@@ -96,6 +96,23 @@ function shell(cmd, options = {}) {
 function underlineMessage(string) {
   return `\x1b[4m${string}\x1b[0m`;
 };
+
+// ANSI-colour a unified diff. Only when stdout is a terminal (and NO_COLOR is
+// unset) so piped/captured output stays plain. 256-colour indexes are used
+// instead of the basic ANSI slots because terminal themes remap those.
+const USE_COLOR = Boolean(process.stdout.isTTY) && !process.env.NO_COLOR;
+function colorizeDiff(text) {
+  if (!USE_COLOR || !text) return text;
+  const paint = (code, line) => `\x1b[${code}m${line}\x1b[0m`;
+  return text.split("\n").map((line) => {
+    if (line.startsWith("+++ ") || line.startsWith("--- ")) return paint("1", line);        // file headers: bold
+    if (line.startsWith("@@")) return paint("38;5;75", line);                              // hunk: blue
+    if (line.startsWith("+")) return paint("38;5;71", line);                               // added: green
+    if (line.startsWith("-")) return paint("38;5;167", line);                              // removed: red
+    if (/^(=+$|RCS file:|retrieving revision|diff )/.test(line)) return paint("2", line);  // rcsdiff chatter: dim
+    return line;
+  }).join("\n");
+}
 
 // Read xattr from directory (returns relative path or null)
 function getXattrPath(dir) {
@@ -506,13 +523,16 @@ async function checkoutFile(fname) {
     console.log("\nERROR: File has been changed since last check in.");
     console.log(`       Someone edited "${fname}" without checking in their changes.\n`);
     console.log("       Here are the changes:");
-    shell(`cat ${tmpFile}`);
+    try {
+      process.stdout.write(colorizeDiff(readFileSync(tmpFile, "utf8")));
+    }
+    catch { /* ignore */ }
     try {
       unlinkSync(tmpFile);
     }
     catch { /* ignore */ }
-    console.log("\n  '<' = RCS has information that the file does not.");
-    console.log("  '>' = The file has information that RCS does not.\n");
+    console.log("\n  '-' = RCS has information that the file does not.");
+    console.log("  '+' = The file has information that RCS does not.\n");
     console.log("Options:");
     console.log("     1. Check the changes into RCS");
     console.log("     2. Exit");
@@ -687,7 +707,10 @@ async function showDiff(fname, rev1, rev2 = null) {
   }
 
   console.log(`\n${underlineMessage(fname)} (${rev1} vs ${rev2 || "current"})\n`);
-  shell(diffCmd);
+  const result = shell(diffCmd, { silent: true });
+  if (result.stdout) process.stdout.write(colorizeDiff(result.stdout));
+  if (result.stderr) process.stderr.write(result.stderr);
+  if (result.code !== 0 && result.code !== 1) process.exitCode = result.code;   // 1 = differences found
 }
 
 // Main
