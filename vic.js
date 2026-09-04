@@ -32,6 +32,7 @@ const RCS_CHECKOUT = `${RCS_ROOT}/co -l -zLT`;
 const RCS_CHECKIN_BASE = `${RCS_ROOT}/ci -u -zLT`;
 const RCS_LOCK = `${RCS_ROOT}/rcs -l -q -zLT`;
 const RCS_UNLOCK = `${RCS_ROOT}/rcs -u -q -zLT`;
+const RCS_NONSTRICT = `${RCS_ROOT}/rcs -U -q -zLT`;
 const RCS_DIFF = `${RCS_ROOT}/rcsdiff -u -zLT`;
 const RLOG = `${RCS_ROOT}/rlog -zLT`;
 const EDITOR = process.env.VISUAL || process.env.EDITOR || "vi";
@@ -486,6 +487,9 @@ async function checkoutFile(fname) {
     console.log(`\nNOTE: ${fname} has never been checked into RCS`);
     // console.log(`Checking in via '${RCS_CHECKIN_BASE}'\n`);
     shell(`${RCS_CHECKIN_BASE} -m"Initial checkin" "${fname}" "${rcsFile}"`);
+    // Non-strict locking: co / ci -u leave owner write on the working file
+    // (see co(1)), so a checkin outside vic no longer flips it to 0444.
+    shell(`${RCS_NONSTRICT} "${fname}" "${rcsFile}"`);
   }
 
   // Check if file is locked by someone else
